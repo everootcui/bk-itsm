@@ -209,13 +209,60 @@ class MainWindow(QMainWindow):
         header.setMinimumSectionSize(80) # 设置所有列的统一最小宽度
 
         # 设置表格样式
-        self.table.setAlternatingRowColors(True)
+        self.table.setAlternatingRowColors(False)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         # 允许双击或按 F2 键编辑单元格
         self.table.setEditTriggers(QTableWidget.DoubleClicked | QTableWidget.EditKeyPressed)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
-        self.table.setStyleSheet("QTableWidget { selection-background-color: #e1ecff; selection-color: #3a84ff; }\nQTableWidget::item { padding: 5px; }\nQTableWidget::item:selected { background-color: #e1ecff; color: #3a84ff; border: 1px solid #3a84ff; }") # 统一选中样式和item padding
+        self.table.setStyleSheet("""
+            QTableWidget {
+                border: 1px solid #dcdee5;
+                border-radius: 5px;
+                background-color: white;
+                gridline-color: transparent;
+            }
+            QTableWidget::item {
+                padding: 5px;
+                border-bottom: 1px solid #f0f1f5;
+                background-color: white;
+            }
+            QTableWidget::item:selected {
+                background-color: #e1ecff;
+                color: #3a84ff;
+                border: 1px solid #3a84ff;
+            }
+            QLineEdit, QComboBox {
+                padding: 5px 10px;
+                border: 1px solid #dcdee5;
+                border-radius: 3px;
+                background-color: white;
+                font-size: 11px;
+            }
+            QLineEdit:focus, QComboBox:focus {
+                border-color: #3a84ff;
+            }
+            QComboBox::drop-down {
+                /* border: none; */ /* 移除默认边框 */
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                /* image: none; */ /* 移除默认图像 */
+                /* border: none; */ /* 移除默认边框 */
+            }
+            QHeaderView::section {
+                background-color: #f5f6fa;
+                padding: 5px;
+                border: none;
+                border-bottom: 1px solid #dcdee5;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QLabel {
+                color: #63656e;
+                font-size: 11px;
+            }
+        """)
 
         # 连接 itemChanged 信号到处理函数
         self.table.itemChanged.connect(self.on_table_item_changed)
@@ -358,6 +405,7 @@ class MainWindow(QMainWindow):
         QTableWidget::item {
             padding: 5px;
             border-bottom: 1px solid #f0f1f5;
+            background-color: white;
         }
         QTableWidget::item:selected {
             background-color: #e1ecff;
