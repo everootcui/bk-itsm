@@ -20,33 +20,15 @@ class MainWindow(QMainWindow):
 
         # 设置窗口图标
         try:
-            # 尝试获取应用程序可执行文件所在的目录
             app_path = QCoreApplication.applicationFilePath()
             app_dir = os.path.dirname(app_path)
-
-            # 尝试在打包后的 _internal 目录中查找图标
-            icon_path_attempt1 = os.path.join(app_dir, '_internal', 'favicon.ico')
-            print(f"尝试路径 1 (internal): {icon_path_attempt1}, 存在: {os.path.exists(icon_path_attempt1)}") # 打印调试信息
-
-            icon_path = icon_path_attempt1
-
-            # 如果 _internal 目录下的路径不存在，尝试从源码目录加载 (开发环境)
+            icon_path = os.path.join(app_dir, '_internal', 'favicon.ico')
             if not os.path.exists(icon_path):
-                 # 尝试项目根目录 (对于直接运行 main.py)
-                 icon_path_attempt2 = 'favicon.ico' # 假设在项目根目录
-                 print(f"尝试路径 2 (root): {icon_path_attempt2}, 存在: {os.path.exists(icon_path_attempt2)}") # 打印调试信息
-                 icon_path = icon_path_attempt2
-
-            # 如果找到了图标文件路径，则设置窗口图标
+                icon_path = 'favicon.ico'
             if os.path.exists(icon_path):
-                 self.setWindowIcon(QIcon(icon_path))
-                 print(f"成功设置图标: {icon_path}") # 打印成功信息
-            else:
-                 print("警告: 图标文件 favicon.ico 未找到！") # 如果最终还是没找到图标，打印警告
-
+                self.setWindowIcon(QIcon(icon_path))
         except Exception as e:
-            # 捕获设置图标时的异常
-            print(f"设置窗口图标时发生错误: {e}") # 打印异常信息
+            pass
 
         # 初始化数据
         self.records = []
@@ -232,15 +214,17 @@ class MainWindow(QMainWindow):
                 color: #3a84ff;
                 border: 1px solid #3a84ff;
             }
-            QLineEdit, QComboBox {
-                padding: 5px 10px;
-                border: 1px solid #dcdee5;
-                border-radius: 3px;
-                background-color: white;
+            QTableWidget QLineEdit,
+            QTableWidget QComboBox {
+                border: 1px solid #3a84ff;
+                padding: 0 4px;
+                background: white;
                 font-size: 11px;
+                border-radius: 3px;
             }
-            QLineEdit:focus, QComboBox:focus {
-                border-color: #3a84ff;
+            QTableWidget QLineEdit:focus,
+            QTableWidget QComboBox:focus {
+                border-color: #2b6cd9;
             }
             QComboBox::drop-down {
                 /* border: none; */ /* 移除默认边框 */
@@ -415,7 +399,10 @@ class MainWindow(QMainWindow):
         QTableWidget QLineEdit,
         QTableWidget QComboBox {
             border: 1px solid #3a84ff;
-            padding: 0;
+            padding: 0 4px;
+            background: white;
+            font-size: 11px;
+            border-radius: 3px;
         }
         QTableWidget QLineEdit:focus,
         QTableWidget QComboBox:focus {
