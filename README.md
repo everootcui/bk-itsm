@@ -22,22 +22,10 @@ main.spec           # PyInstaller 编译配置文件
 data/               # 数据存储目录
 ├── business.json   # 存储业务名称列表
 └── records.json    # 存储工作记录 (每条记录包含业务、任务、手动耗时和时间戳)
-dist/               # PyInstaller 编译输出目录
-build/              # PyInstaller 编译临时目录
 ui/                 # UI 相关文件目录
 ├── main_window.py  # 主窗口界面实现
 └── business_dialog.py # 业务管理对话框实现
 ```
-
--   `main.py`: 应用程序的入口点，初始化 QApplication 并显示主窗口
--   `requirements.txt`: 列出了项目所需的 Python 库及其版本，例如 PySide6
--   `main.spec`: 当使用 PyInstaller 编译时生成的配置文件，可以用于定制编译选项，如指定图标、包含额外文件等
--   `data/`: 存放应用运行时生成的 JSON 数据文件，包括业务名称列表和工作记录
--   `dist/`: PyInstaller 编译成功后生成的包含可执行文件的目录
--   `build/`: PyInstaller 在编译过程中使用的临时目录
--   `ui/`: 包含应用程序用户界面相关的 Python 模块
-    -   `main_window.py`: 实现了应用程序的主窗口界面和主要逻辑，包括记录的添加、显示、统计、排序、文本生成、记录删除/清空以及与业务管理的交互
-    -   `business_dialog.py`: 实现了业务名称管理的对话框界面和相关逻辑
 
 ## 编译与使用
 
