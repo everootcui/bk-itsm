@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
         self.apply_styles()
 
         # 设置回车键触发添加记录
-        self.task_time_input.returnPressed.connect(self.add_record)
+        self.manual_time_input.returnPressed.connect(self.add_record)
 
         # 初始化表格和统计信息
         self.update_table()
@@ -128,41 +128,62 @@ class MainWindow(QMainWindow):
         input_layout.addWidget(self.add_button, 1, 2)
         input_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 3)
 
-        # 任务描述输入
+        # 任务描述和耗时输入在同一行，并与上一行对齐
         task_label = QLabel("任务描述:")
         task_label.setFont(label_font)
         self.task_input = QLineEdit()
         self.task_input.setPlaceholderText("输入任务描述")
         self.task_input.setMinimumHeight(28)
-        input_layout.addWidget(task_label, 2, 0, alignment=Qt.AlignRight | Qt.AlignVCenter)
-        input_layout.addWidget(self.task_input, 2, 1, 1, 3) # 任务描述跨三列
 
-        # 手动耗时输入和任务耗时输入在同一行
-        manual_time_label = QLabel("手动耗时(小时):")
+        manual_time_label = QLabel("耗时(小时):")
         manual_time_label.setFont(label_font)
         self.manual_time_input = QLineEdit()
         self.manual_time_input.setPlaceholderText("输入")
         self.manual_time_input.setMinimumHeight(28)
         self.manual_time_input.setMaximumWidth(80)
 
-        task_time_label = QLabel("任务耗时(小时):")
-        task_time_label.setFont(label_font)
-        self.task_time_input = QLineEdit()
-        self.task_time_input.setPlaceholderText("输入")
-        self.task_time_input.setMinimumHeight(28)
-        self.task_time_input.setMaximumWidth(80)
+        # 创建增加和减少耗时的按钮
+        self.increase_time_button = QPushButton("+")
+        self.increase_time_button.setFixedSize(28, 28) # 设置固定大小
+        self.increase_time_button.setObjectName("timeControlButton") # 设置对象名称
+        self.decrease_time_button = QPushButton("-")
+        self.decrease_time_button.setFixedSize(28, 28) # 设置固定大小
+        self.decrease_time_button.setObjectName("timeControlButton") # 设置对象名称
 
-        # 使用QHBoxLayout来排列耗时输入框，然后将QHBoxLayout添加到GridLayout
-        time_inputs_layout = QHBoxLayout()
-        time_inputs_layout.setSpacing(5)
-        time_inputs_layout.addWidget(manual_time_label)
-        time_inputs_layout.addWidget(self.manual_time_input)
-        time_inputs_layout.addSpacing(15)
-        time_inputs_layout.addWidget(task_time_label)
-        time_inputs_layout.addWidget(self.task_time_input)
-        time_inputs_layout.addStretch() # 将耗时输入框推到左边
+        self.increase_time_button.clicked.connect(self.increase_time)
+        self.decrease_time_button.clicked.connect(self.decrease_time)
 
-        input_layout.addLayout(time_inputs_layout, 3, 0, 1, 4) # 耗时输入框跨四列
+        # 将任务描述和耗时相关的标签、输入框和按钮添加到GridLayout (放在第2行)
+        # 任务描述标签和输入框
+        input_layout.addWidget(task_label, 2, 0, alignment=Qt.AlignRight | Qt.AlignVCenter) # 任务描述标签在第0列
+        input_layout.addWidget(self.task_input, 2, 1, 1, 1) # 任务描述输入框在第1列
+
+        # 耗时标签、输入框和按钮
+        input_layout.addWidget(manual_time_label, 2, 2, alignment=Qt.AlignRight | Qt.AlignVCenter) # 耗时标签在第2列
+        # 使用QHBoxLayout来放置耗时输入框和增加/减少按钮
+        time_input_buttons_layout = QHBoxLayout()
+        time_input_buttons_layout.setContentsMargins(0, 0, 0, 0) # 移除内边距
+        time_input_buttons_layout.setSpacing(5) # 调整耗时输入框和按钮之间的间隔
+        time_input_buttons_layout.addWidget(self.manual_time_input)
+        time_input_buttons_layout.addWidget(self.increase_time_button) # +按钮在前
+        time_input_buttons_layout.addWidget(self.decrease_time_button) # -按钮在后
+
+        input_layout.addLayout(time_input_buttons_layout, 2, 3, 1, 3) # 将耗时输入框和按钮的布局添加到网格布局的第2行第3列，跨越3列
+
+        # 设置列的伸展因子以实现比例和调整间距
+        # 任务描述输入框所在的列 (列1) 伸展因子设置为2
+        input_layout.setColumnStretch(1, 2) 
+
+        # 耗时输入框和按钮所在的列组 (列3到列5) 占比1
+        # 主要通过控制列3的伸展因子来影响耗时输入框的宽度
+        input_layout.setColumnStretch(3, 1)
+        input_layout.setColumnStretch(4, 0) # 按钮列不伸展
+        input_layout.setColumnStretch(5, 0) # 按钮列不伸展
+
+        # 其他列 (标签) 的伸展因子为0，由内容决定宽度
+        input_layout.setColumnStretch(0, 0)
+        input_layout.setColumnStretch(2, 0)
+        input_layout.setColumnStretch(6, 0) # 确保超出使用的列伸展因子为0
 
         self.layout.addWidget(input_container)
 
@@ -173,19 +194,18 @@ class MainWindow(QMainWindow):
 
 
     def create_table(self):
-        # 移除"时间"列，总共 5 列
+        # 移除"时间"列，总共 4 列
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["业务", "任务", "手动耗时", "任务耗时", "操作"])
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["业务", "任务", "耗时", "操作"])
 
         # 设置表格列宽
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # 业务名称
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # 任务描述
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)  # 手动耗时
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)  # 任务耗时
-        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)  # 操作 (新的索引是 4)
-        header.resizeSection(4, 70) # 设置操作列固定宽度
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)  # 耗时
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)  # 操作
+        header.resizeSection(3, 70) # 设置操作列固定宽度
 
         # 设置列的最小宽度以优化编辑时的显示
         header.setMinimumSectionSize(80) # 设置所有列的统一最小宽度
@@ -265,17 +285,20 @@ class MainWindow(QMainWindow):
         stats_font.setPointSize(10)
         stats_font.setBold(True)
 
-        self.manual_time_total = QLabel("总手动耗时: 0小时")
-        self.task_time_total = QLabel("总任务耗时: 0小时")
+        self.manual_time_total = QLabel("总耗时: 0小时")
         # 将"今日总记录数"改为"总记录单量"
         self.records_today = QLabel("总记录单量: 0条")
 
-        for label in [self.manual_time_total, self.task_time_total, self.records_today]:
+        for label in [self.manual_time_total, self.records_today]:
             label.setFont(stats_font)
-            stats_layout.addWidget(label)
 
-        # 移除stretch，让间距控制分布
-        # stats_layout.addStretch()
+        # 添加伸展空间以使标签居中
+        stats_layout.addStretch()
+        stats_layout.addWidget(self.manual_time_total)
+        stats_layout.addStretch() # 在两者之间添加伸展空间
+        stats_layout.addWidget(self.records_today)
+        stats_layout.addStretch()
+
         self.layout.addWidget(stats_container)
 
     def create_action_buttons_area(self):
@@ -373,13 +396,46 @@ class MainWindow(QMainWindow):
             border-color: #3a84ff;
         }
         QComboBox::drop-down {
-            /* border: none; */ /* 移除默认边框 */
             width: 20px;
         }
         QComboBox::down-arrow {
-            /* image: none; */ /* 移除默认图像 */
-            /* border: none; */ /* 移除默认边框 */
+            width: 12px;
+            height: 12px;
         }
+        QComboBox QAbstractItemView {
+            border: 1px solid #dcdee5;
+            background-color: white;
+            selection-background-color: #e1ecff;
+            selection-color: #3a84ff;
+            outline: none;
+        }
+        QComboBox QAbstractItemView::item {
+            min-height: 25px;
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        /* 耗时控制按钮样式 */
+        QPushButton#timeControlButton {
+            background-color: #f0f1f5; /* 浅灰色背景 */
+            color: #333; /* 深色文字 */
+            border: 1px solid #dcdee5; /* 边框 */
+            border-radius: 3px; /* 圆角 */
+            padding: 2px; /* 内部边距 */
+            font-size: 12px; /* 字体大小 */
+            font-weight: bold;
+        }
+
+        QPushButton#timeControlButton:hover {
+            background-color: #e1ecff; /* 鼠标悬停时的背景色 */
+            border-color: #3a84ff;
+        }
+
+        QPushButton#timeControlButton:pressed {
+            background-color: #cce0ff; /* 鼠标按下时的背景色 */
+            border-color: #2b6cd9;
+        }
+
         QTableWidget {
             border: 1px solid #dcdee5;
             border-radius: 5px;
@@ -432,15 +488,13 @@ class MainWindow(QMainWindow):
         business = self.business_combo.currentText().strip()
         task = self.task_input.text().strip()
         manual_time = self.manual_time_input.text().strip()
-        task_time = self.task_time_input.text().strip()
 
-        if not all([business, task, manual_time, task_time]):
+        if not all([business, task, manual_time]):
             QMessageBox.warning(self, "警告", "请填写所有字段")
             return
 
         try:
             manual_time = float(manual_time)
-            task_time = float(task_time)
         except ValueError:
             QMessageBox.warning(self, "警告", "耗时必须是数字")
             return
@@ -449,7 +503,6 @@ class MainWindow(QMainWindow):
             "business": business,
             "task": task,
             "manual_time": manual_time,
-            "task_time": task_time,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
@@ -472,7 +525,6 @@ class MainWindow(QMainWindow):
             self.table.setItem(i, 0, QTableWidgetItem(record["business"]))
             self.table.setItem(i, 1, QTableWidgetItem(record["task"]))
             self.table.setItem(i, 2, QTableWidgetItem(str(record["manual_time"])))
-            self.table.setItem(i, 3, QTableWidgetItem(str(record["task_time"])))
             # 移除了设置"时间"列的代码
 
             delete_btn = QPushButton("删除")
@@ -494,20 +546,18 @@ class MainWindow(QMainWindow):
                 }
             """)
             delete_btn.clicked.connect(lambda checked, row=i: self.delete_record(row))
-            # 将操作按钮设置到新的列索引 4
-            self.table.setCellWidget(i, 4, delete_btn)
+            # 将操作按钮设置到新的列索引 3
+            self.table.setCellWidget(i, 3, delete_btn)
 
         self.table.resizeRowsToContents()
 
 
     def update_stats(self):
         manual_total = sum(r["manual_time"] for r in self.records) if self.records else 0
-        task_total = sum(r["task_time"] for r in self.records) if self.records else 0
         # 修改统计逻辑为总记录单量
         total_records_count = len(self.records)
 
-        self.manual_time_total.setText(f"总手动耗时: {manual_total:.1f}小时")
-        self.task_time_total.setText(f"总任务耗时: {task_total:.1f}小时")
+        self.manual_time_total.setText(f"总耗时: {manual_total:.1f}小时")
         # 更新标签文本
         self.records_today.setText(f"总记录单量: {total_records_count}条")
 
@@ -516,8 +566,24 @@ class MainWindow(QMainWindow):
         # self.business_combo.setCurrentText("")
         self.task_input.clear()
         self.manual_time_input.clear()
-        self.task_time_input.clear()
         self.business_combo.setFocus()
+
+    # 添加增加耗时的方法
+    def increase_time(self):
+        try:
+            current_time = float(self.manual_time_input.text()) if self.manual_time_input.text() else 0.0
+            self.manual_time_input.setText(f"{current_time + 0.5:.1f}")
+        except ValueError:
+            QMessageBox.warning(self, "警告", "耗时输入无效")
+
+    # 添加减少耗时的方法
+    def decrease_time(self):
+        try:
+            current_time = float(self.manual_time_input.text()) if self.manual_time_input.text() else 0.0
+            new_time = max(0.0, current_time - 0.5)
+            self.manual_time_input.setText(f"{new_time:.1f}")
+        except ValueError:
+            QMessageBox.warning(self, "警告", "耗时输入无效")
 
     def delete_record(self, row):
         reply = QMessageBox.question(
@@ -577,7 +643,7 @@ class MainWindow(QMainWindow):
             # self.update_business_combo()
 
     def generate_record_text(self):
-        # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 完成了xxx任务 0.5 1
+        # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 完成了xxx任务 0.5
         # 过滤掉当天以外的记录
         today_records = [r for r in self.records if r["timestamp"].startswith(datetime.now().strftime("%Y-%m-%d"))]
 
@@ -589,7 +655,7 @@ class MainWindow(QMainWindow):
         # 注意：截图中的文本顺序与表格倒序不同，这里按照截图中的逻辑（最新记录在前面）生成文本
         # 如果需要按照时间正序生成，可以移除 reversed()
         for record in reversed(today_records):
-             text += f"{record["business"]} {record["task"]}任务 {record["manual_time"]:.1f} {record["task_time"]:.1f}\n"
+            text += f"{record['business']} {record['task']}任务 {record['manual_time']:.1f}\n"
 
         # 将生成的文本复制到剪贴板
         clipboard = QApplication.clipboard()
@@ -680,8 +746,6 @@ class MainWindow(QMainWindow):
             field = "task"
         elif col == 2:
             field = "manual_time"
-        elif col == 3:
-            field = "task_time"
         else:
             return # 忽略其他列的编辑
 
