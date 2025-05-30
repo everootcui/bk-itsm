@@ -308,32 +308,28 @@ class MainWindow(QMainWindow):
         button_layout.setSpacing(15) # 增加按钮之间的间距
 
         self.manage_button = QPushButton("管理业务")
-        self.delete_selected_button = QPushButton("删除选中")
         self.generate_text_button = QPushButton("生成文本")
         self.clear_records_button = QPushButton("清空记录")
 
         self.manage_button.clicked.connect(self.show_business_dialog)
-        self.delete_selected_button.clicked.connect(self.delete_selected_records)
         self.generate_text_button.clicked.connect(self.generate_record_text)
         self.clear_records_button.clicked.connect(self.clear_all_records)
 
-        # 设置删除和清空按钮的object name以便应用特定样式
-        self.delete_selected_button.setObjectName("delete_selected_button")
+        # 设置清空按钮的object name以便应用特定样式
         self.clear_records_button.setObjectName("clear_records_button")
 
         # 调整按钮大小和间距，并按照截图顺序排列
         button_height = 30 # 调整按钮高度
 
         button_layout.addWidget(self.manage_button)
-        button_layout.addWidget(self.delete_selected_button)
         button_layout.addWidget(self.generate_text_button)
         button_layout.addWidget(self.clear_records_button)
 
-        for button in [self.manage_button, self.delete_selected_button, self.generate_text_button, self.clear_records_button]:
+        for button in [self.manage_button, self.generate_text_button, self.clear_records_button]:
             button.setMinimumHeight(button_height)
             # 移除固定宽度设置，使用Expanding策略填充宽度
             # button.setFixedWidth(button_width)
-            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed) # 让按钮填充宽度
+            button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # 移除stretch，让按钮均匀分布
         # button_layout.addStretch()
@@ -373,16 +369,13 @@ class MainWindow(QMainWindow):
         QPushButton:pressed {
             background-color: #0052cc;
         }
-         QPushButton#delete_selected_button,
          QPushButton#clear_records_button {
              background-color: #ea3636;
          }
-         QPushButton#delete_selected_button:hover,
          QPushButton#clear_records_button:hover {
              background-color: #c42b2b;
          }
-          QPushButton#delete_selected_button:pressed,
-         QPushButton#clear_records_button:pressed {
+          QPushButton#clear_records_button:pressed {
              background-color: #a12121;
          }
         QLineEdit, QComboBox {
@@ -610,38 +603,6 @@ class MainWindow(QMainWindow):
             else:
                  QMessageBox.warning(self, "错误", "删除记录失败，索引超出范围。")
 
-    def delete_selected_records(self):
-        selected_rows = sorted(list(set([item.row() for item in self.table.selectedItems()])), reverse=True)
-        if not selected_rows:
-            QMessageBox.warning(self, "警告", "请选择要删除的记录")
-            return
-
-        reply = QMessageBox.question(
-            self, "确认删除",
-            f"确定要删除选中的 {len(selected_rows)} 条记录吗？",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-
-        if reply == QMessageBox.Yes:
-            businesses_to_check = set()
-            for row in selected_rows:
-                original_index = len(self.records) - 1 - row
-                if 0 <= original_index < len(self.records):
-                    businesses_to_check.add(self.records[original_index]['business'])
-                    self.records.pop(original_index)
-
-            self.save_data()
-            self.update_table()
-            self.update_stats()
-
-            # 检查删除的业务是否还在记录中使用，如果没有则从业务名称库中移除（可选）
-            # for business in businesses_to_check:
-            #     if business in self.business_names and not any(r['business'] == business for r in self.records):
-            #         self.business_names.remove(business)
-            # self.save_business_names()
-            # self.update_business_combo()
-
     def generate_record_text(self):
         # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 完成了xxx任务 0.5
         # 过滤掉当天以外的记录
@@ -750,7 +711,7 @@ class MainWindow(QMainWindow):
             return # 忽略其他列的编辑
 
         # 对于耗时字段，验证输入是否为有效的数字
-        if field in ["manual_time", "task_time"]:
+        if field in ["manual_time"]:
             try:
                 new_value = float(new_value)
             except ValueError:
