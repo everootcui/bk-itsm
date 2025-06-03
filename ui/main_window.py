@@ -604,7 +604,7 @@ class MainWindow(QMainWindow):
                  QMessageBox.warning(self, "错误", "删除记录失败，索引超出范围。")
 
     def generate_record_text(self):
-        # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 完成了xxx任务 0.5
+        # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 完成了xxx 0.5
         # 过滤掉当天以外的记录
         today_records = [r for r in self.records if r["timestamp"].startswith(datetime.now().strftime("%Y-%m-%d"))]
 
@@ -616,7 +616,7 @@ class MainWindow(QMainWindow):
         # 注意：截图中的文本顺序与表格倒序不同，这里按照截图中的逻辑（最新记录在前面）生成文本
         # 如果需要按照时间正序生成，可以移除 reversed()
         for record in reversed(today_records):
-            text += f"{record['business']} {record['task']}任务 {record['manual_time']:.1f}\n"
+            text += f"{record['business']} {record['task']} {record['manual_time']:.1f}\n"
 
         # 将生成的文本复制到剪贴板
         clipboard = QApplication.clipboard()
