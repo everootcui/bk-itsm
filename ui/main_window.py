@@ -605,23 +605,20 @@ class MainWindow(QMainWindow):
 
     def generate_record_text(self):
         # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 完成了xxx 0.5
-        # 过滤掉当天以外的记录
-        today_records = [r for r in self.records if r["timestamp"].startswith(datetime.now().strftime("%Y-%m-%d"))]
-
-        if not today_records:
-            QMessageBox.information(self, "提示", "今日没有记录可以生成文本")
+        if not self.records:
+            QMessageBox.information(self, "提示", "没有记录可以生成文本")
             return
 
         text = "小鲸 批量创建记录单\n"
         # 注意：截图中的文本顺序与表格倒序不同，这里按照截图中的逻辑（最新记录在前面）生成文本
         # 如果需要按照时间正序生成，可以移除 reversed()
-        for record in reversed(today_records):
+        for record in reversed(self.records):
             text += f"{record['business']} {record['task']} {record['manual_time']:.1f}\n"
 
         # 将生成的文本复制到剪贴板
         clipboard = QApplication.clipboard()
         clipboard.setText(text.strip())
-        QMessageBox.information(self, "提示", "今日记录文本已复制到剪贴板")
+        QMessageBox.information(self, "提示", "记录文本已复制到剪贴板")
 
     def clear_all_records(self):
         if not self.records:
