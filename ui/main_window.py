@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 from datetime import datetime
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -12,6 +13,14 @@ from PySide6.QtCore import Qt, QStringListModel, QSize, QCoreApplication
 from PySide6.QtGui import QColor, QFont, QIcon
 from .business_dialog import BusinessDialog
 
+def get_app_data_dir():
+    """获取应用程序数据目录"""
+    if sys.platform == 'darwin':  # macOS
+        home = os.path.expanduser('~')
+        return os.path.join(home, 'Library', 'Application Support', 'WorkRecordTool')
+    else:  # Windows 和其他平台
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -22,9 +31,15 @@ class MainWindow(QMainWindow):
         try:
             app_path = QCoreApplication.applicationFilePath()
             app_dir = os.path.dirname(app_path)
-            icon_path = os.path.join(app_dir, '_internal', 'favicon.ico')
-            if not os.path.exists(icon_path):
-                icon_path = 'favicon.ico'
+            # 在 Mac 上，图标文件可能在 Resources 目录下
+            if sys.platform == 'darwin':
+                icon_path = os.path.join(app_dir, 'Resources', 'favicon.icns')
+                if not os.path.exists(icon_path):
+                    icon_path = os.path.join(app_dir, 'favicon.icns')
+            else:
+                icon_path = os.path.join(app_dir, '_internal', 'favicon.ico')
+                if not os.path.exists(icon_path):
+                    icon_path = 'favicon.ico'
             if os.path.exists(icon_path):
                 self.setWindowIcon(QIcon(icon_path))
         except Exception as e:
@@ -33,6 +48,7 @@ class MainWindow(QMainWindow):
         # 初始化数据
         self.records = []
         self.business_names = []
+        self.data_dir = get_app_data_dir()
 
         # 创建主窗口部件
         self.central_widget = QWidget()
@@ -337,138 +353,184 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(button_container)
 
     def apply_styles(self):
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #f5f6fa;
-                color: #333;
-            }
-            #sectionLabel {
+        # 检测是否为暗黑主题
+        is_dark_mode = False
+        if sys.platform == 'darwin':
+            # 在 Mac 上检测系统主题
+            try:
+                from Foundation import NSAppearance
+                appearance = NSAppearance.currentAppearance()
+                is_dark_mode = appearance.name().localizedString().lower().contains('dark')
+            except:
+                pass
+
+        # 根据主题设置颜色
+        if is_dark_mode:
+            # 暗黑主题颜色
+            bg_color = "#2c2c2c"
+            text_color = "#ffffff"
+            input_bg = "#3c3c3c"
+            border_color = "#4c4c4c"
+            header_bg = "#363636"
+            hover_color = "#4a4a4a"
+            button_bg = "#3a84ff"
+            button_hover = "#2b6cd9"
+            button_pressed = "#0052cc"
+            clear_button_bg = "#ea3636"
+            clear_button_hover = "#c42b2b"
+            clear_button_pressed = "#a12121"
+            table_selected_bg = "#3a84ff"
+            table_selected_text = "#ffffff"
+            table_alternate_bg = "#323232"
+        else:
+            # 亮色主题颜色（保持原有颜色）
+            bg_color = "#f5f6fa"
+            text_color = "#333333"
+            input_bg = "#ffffff"
+            border_color = "#dcdee5"
+            header_bg = "#f5f6fa"
+            hover_color = "#e1ecff"
+            button_bg = "#3a84ff"
+            button_hover = "#2b6cd9"
+            button_pressed = "#0052cc"
+            clear_button_bg = "#ea3636"
+            clear_button_hover = "#c42b2b"
+            clear_button_pressed = "#a12121"
+            table_selected_bg = "#e1ecff"
+            table_selected_text = "#3a84ff"
+            table_alternate_bg = "#ffffff"
+
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                background-color: {bg_color};
+                color: {text_color};
+            }}
+            #sectionLabel {{
                 font-size: 14px;
                 font-weight: bold;
-                color: #333;
+                color: {text_color};
                 margin-top: 10px;
                 margin-bottom: 5px;
-            }
+            }}
             #inputContainer,
-            #statsContainer {
-                background-color: white;
+            #statsContainer {{
+                background-color: {input_bg};
                 border-radius: 5px;
-                /* padding handled by layout */
-            }
-            QPushButton {
-                background-color: #3a84ff;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 11px;
-        }
-        QPushButton:hover {
-            background-color: #2b6cd9;
-        }
-        QPushButton:pressed {
-            background-color: #0052cc;
-        }
-         QPushButton#clear_records_button {
-             background-color: #ea3636;
-         }
-         QPushButton#clear_records_button:hover {
-             background-color: #c42b2b;
-         }
-          QPushButton#clear_records_button:pressed {
-             background-color: #a12121;
-         }
-        QLineEdit, QComboBox {
-            padding: 5px 10px;
-            border: 1px solid #dcdee5;
-            border-radius: 3px;
-            background-color: white;
-            font-size: 11px;
-        }
-        QLineEdit:focus, QComboBox:focus {
-            border-color: #3a84ff;
-        }
-        QComboBox::drop-down {
-            width: 20px;
-        }
-        QComboBox::down-arrow {
-            width: 12px;
-            height: 12px;
-        }
-        QComboBox QAbstractItemView {
-            border: 1px solid #dcdee5;
-            background-color: white;
-            selection-background-color: #e1ecff;
-            selection-color: #3a84ff;
-            outline: none;
-        }
-        QComboBox QAbstractItemView::item {
-            min-height: 25px;
-            padding: 5px;
-            font-size: 14px;
-        }
-
-        /* 耗时控制按钮样式 */
-        QPushButton#timeControlButton {
-            background-color: #f0f1f5; /* 浅灰色背景 */
-            color: #333; /* 深色文字 */
-            border: 1px solid #dcdee5; /* 边框 */
-            border-radius: 3px; /* 圆角 */
-            padding: 2px; /* 内部边距 */
-            font-size: 12px; /* 字体大小 */
-            font-weight: bold;
-        }
-
-        QPushButton#timeControlButton:hover {
-            background-color: #e1ecff; /* 鼠标悬停时的背景色 */
-            border-color: #3a84ff;
-        }
-
-        QPushButton#timeControlButton:pressed {
-            background-color: #cce0ff; /* 鼠标按下时的背景色 */
-            border-color: #2b6cd9;
-        }
-
-        QTableWidget {
-            border: 1px solid #dcdee5;
-            border-radius: 5px;
-            background-color: white;
-            gridline-color: transparent;
-        }
-        QTableWidget::item {
-            padding: 5px;
-            border-bottom: 1px solid #f0f1f5;
-            background-color: white;
-        }
-        QTableWidget::item:selected {
-            background-color: #e1ecff;
-            color: #3a84ff;
-            border: 1px solid #3a84ff;
-        }
-        QTableWidget QLineEdit,
-        QTableWidget QComboBox {
-            border: 1px solid #3a84ff;
-            padding: 0 4px;
-            background: white;
-            font-size: 11px;
-            border-radius: 3px;
-        }
-        QTableWidget QLineEdit:focus,
-        QTableWidget QComboBox:focus {
-            border-color: #2b6cd9;
-        }
-        QHeaderView::section {
-            background-color: #f5f6fa;
-            padding: 5px;
-            border: none;
-            border-bottom: 1px solid #dcdee5;
-            font-weight: bold;
-            font-size: 11px;
-        }
-        QLabel {
-            color: #63656e;
-            font-size: 11px;
-        }
+            }}
+            QPushButton {{
+                background-color: {button_bg};
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 3px;
+                font-size: 11px;
+            }}
+            QPushButton:hover {{
+                background-color: {button_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: {button_pressed};
+            }}
+            QPushButton#clear_records_button {{
+                background-color: {clear_button_bg};
+            }}
+            QPushButton#clear_records_button:hover {{
+                background-color: {clear_button_hover};
+            }}
+            QPushButton#clear_records_button:pressed {{
+                background-color: {clear_button_pressed};
+            }}
+            QLineEdit, QComboBox {{
+                padding: 5px 10px;
+                border: 1px solid {border_color};
+                border-radius: 3px;
+                background-color: {input_bg};
+                color: {text_color};
+                font-size: 11px;
+            }}
+            QLineEdit:focus, QComboBox:focus {{
+                border-color: {button_bg};
+            }}
+            QComboBox::drop-down {{
+                width: 20px;
+            }}
+            QComboBox::down-arrow {{
+                width: 12px;
+                height: 12px;
+            }}
+            QComboBox QAbstractItemView {{
+                border: 1px solid {border_color};
+                background-color: {input_bg};
+                color: {text_color};
+                selection-background-color: {hover_color};
+                selection-color: {button_bg};
+                outline: none;
+            }}
+            QComboBox QAbstractItemView::item {{
+                min-height: 25px;
+                padding: 5px;
+                font-size: 14px;
+            }}
+            QPushButton#timeControlButton {{
+                background-color: {input_bg};
+                color: {text_color};
+                border: 1px solid {border_color};
+                border-radius: 3px;
+                padding: 2px;
+                font-size: 12px;
+                font-weight: bold;
+            }}
+            QPushButton#timeControlButton:hover {{
+                background-color: {hover_color};
+                border-color: {button_bg};
+            }}
+            QPushButton#timeControlButton:pressed {{
+                background-color: {button_bg};
+                color: white;
+            }}
+            QTableWidget {{
+                border: 1px solid {border_color};
+                border-radius: 5px;
+                background-color: {input_bg};
+                color: {text_color};
+                gridline-color: transparent;
+            }}
+            QTableWidget::item {{
+                padding: 5px;
+                border-bottom: 1px solid {border_color};
+                background-color: {input_bg};
+            }}
+            QTableWidget::item:selected {{
+                background-color: {table_selected_bg};
+                color: {table_selected_text};
+                border: 1px solid {button_bg};
+            }}
+            QTableWidget QLineEdit,
+            QTableWidget QComboBox {{
+                border: 1px solid {button_bg};
+                padding: 0 4px;
+                background: {input_bg};
+                color: {text_color};
+                font-size: 11px;
+                border-radius: 3px;
+            }}
+            QTableWidget QLineEdit:focus,
+            QTableWidget QComboBox:focus {{
+                border-color: {button_hover};
+            }}
+            QHeaderView::section {{
+                background-color: {header_bg};
+                padding: 5px;
+                border: none;
+                border-bottom: 1px solid {border_color};
+                font-weight: bold;
+                font-size: 11px;
+                color: {text_color};
+            }}
+            QLabel {{
+                color: {text_color};
+                font-size: 11px;
+            }}
         """)
 
     def update_business_combo(self):
@@ -641,12 +703,12 @@ class MainWindow(QMainWindow):
 
     def load_data(self):
         try:
-            if os.path.exists("data/records.json"):
-                with open("data/records.json", "r", encoding="utf-8") as f:
+            if os.path.exists(os.path.join(self.data_dir, "records.json")):
+                with open(os.path.join(self.data_dir, "records.json"), "r", encoding="utf-8") as f:
                     self.records = json.load(f)
 
-            if os.path.exists("data/business.json"):
-                with open("data/business.json", "r", encoding="utf-8") as f:
+            if os.path.exists(os.path.join(self.data_dir, "business.json")):
+                with open(os.path.join(self.data_dir, "business.json"), "r", encoding="utf-8") as f:
                     self.business_names = json.load(f)
         except Exception as e:
             QMessageBox.warning(self, "警告", f"加载数据失败: {str(e)}")
@@ -655,17 +717,17 @@ class MainWindow(QMainWindow):
         self.update_business_combo()
 
     def save_data(self):
-        os.makedirs("data", exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
         try:
-            with open("data/records.json", "w", encoding="utf-8") as f:
+            with open(os.path.join(self.data_dir, "records.json"), "w", encoding="utf-8") as f:
                 json.dump(self.records, f, ensure_ascii=False, indent=2)
         except Exception as e:
             QMessageBox.warning(self, "警告", f"保存数据失败: {str(e)}")
 
     def save_business_names(self):
-        os.makedirs("data", exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
         try:
-            with open("data/business.json", "w", encoding="utf-8") as f:
+            with open(os.path.join(self.data_dir, "business.json"), "w", encoding="utf-8") as f:
                 json.dump(self.business_names, f, ensure_ascii=False, indent=2)
         except Exception as e:
             QMessageBox.warning(self, "警告", f"保存业务名称失败: {str(e)}")
@@ -681,8 +743,8 @@ class MainWindow(QMainWindow):
     # 添加从文件重新加载业务名称的方法 (仅用于对话框修改后刷新)
     def load_business_names(self):
         try:
-            if os.path.exists("data/business.json"):
-                with open("data/business.json", "r", encoding="utf-8") as f:
+            if os.path.exists(os.path.join(self.data_dir, "business.json")):
+                with open(os.path.join(self.data_dir, "business.json"), "r", encoding="utf-8") as f:
                     self.business_names = json.load(f)
         except Exception as e:
              QMessageBox.warning(self, "警告", f"重新加载业务名称失败: {str(e)}")

@@ -1,10 +1,19 @@
 import json
 import os
+import sys
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QListWidget,
     QPushButton, QLineEdit, QMessageBox
 )
 from PySide6.QtCore import Qt
+
+def get_app_data_dir():
+    """获取应用程序数据目录"""
+    if sys.platform == 'darwin':  # macOS
+        home = os.path.expanduser('~')
+        return os.path.join(home, 'Library', 'Application Support', 'WorkRecordTool')
+    else:  # Windows 和其他平台
+        return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 
 class BusinessDialog(QDialog):
     def __init__(self, parent=None):
@@ -87,16 +96,20 @@ class BusinessDialog(QDialog):
     
     def load_business_names(self):
         try:
-            if os.path.exists("data/business.json"):
-                with open("data/business.json", "r", encoding="utf-8") as f:
+            data_dir = get_app_data_dir()
+            business_file = os.path.join(data_dir, "business.json")
+            if os.path.exists(business_file):
+                with open(business_file, "r", encoding="utf-8") as f:
                     self.business_names = json.load(f)
         except Exception as e:
             QMessageBox.warning(self, "警告", f"加载业务名称失败: {str(e)}")
     
     def save_business_names(self):
-        os.makedirs("data", exist_ok=True)
+        data_dir = get_app_data_dir()
+        os.makedirs(data_dir, exist_ok=True)
         try:
-            with open("data/business.json", "w", encoding="utf-8") as f:
+            business_file = os.path.join(data_dir, "business.json")
+            with open(business_file, "w", encoding="utf-8") as f:
                 json.dump(self.business_names, f, ensure_ascii=False, indent=2)
         except Exception as e:
             QMessageBox.warning(self, "警告", f"保存业务名称失败: {str(e)}")
