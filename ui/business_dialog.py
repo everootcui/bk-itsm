@@ -61,37 +61,74 @@ class BusinessDialog(QDialog):
         layout.addLayout(button_layout)
     
     def apply_styles(self):
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #f5f6fa;
-            }
-            QPushButton {
-                background-color: #3a84ff;
+        # 检测是否为暗黑主题
+        is_dark_mode = False
+        if sys.platform == 'darwin':
+            # 在 Mac 上检测系统主题
+            try:
+                from Foundation import NSAppearance
+                appearance = NSAppearance.currentAppearance()
+                is_dark_mode = appearance.name().localizedString().lower().contains('dark')
+            except:
+                pass
+
+        # 根据主题设置颜色
+        if is_dark_mode:
+            # 暗黑主题颜色
+            bg_color = "#2c2c2c"
+            text_color = "#ffffff"
+            input_bg = "#3c3c3c"
+            border_color = "#4c4c4c"
+            button_bg = "#3a84ff"
+            button_hover = "#2b6cd9"
+            list_selected_bg = "#3a84ff"
+            list_selected_text = "#ffffff"
+        else:
+            # 亮色主题颜色
+            bg_color = "#f5f6fa"
+            text_color = "#333333"
+            input_bg = "#ffffff"
+            border_color = "#dcdee5"
+            button_bg = "#3a84ff"
+            button_hover = "#2b6cd9"
+            list_selected_bg = "#e1ecff"
+            list_selected_text = "#3a84ff"
+
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {bg_color};
+                color: {text_color};
+            }}
+            QPushButton {{
+                background-color: {button_bg};
                 color: white;
                 border: none;
                 padding: 5px 15px;
                 border-radius: 3px;
-            }
-            QPushButton:hover {
-                background-color: #2b6cd9;
-            }
-            QLineEdit {
+            }}
+            QPushButton:hover {{
+                background-color: {button_hover};
+            }}
+            QLineEdit {{
                 padding: 5px;
-                border: 1px solid #dcdee5;
+                border: 1px solid {border_color};
                 border-radius: 3px;
-            }
-            QListWidget {
-                border: 1px solid #dcdee5;
+                background-color: {input_bg};
+                color: {text_color};
+            }}
+            QListWidget {{
+                border: 1px solid {border_color};
                 border-radius: 3px;
-                background-color: white;
-            }
-            QListWidget::item {
+                background-color: {input_bg};
+                color: {text_color};
+            }}
+            QListWidget::item {{
                 padding: 5px;
-            }
-            QListWidget::item:selected {
-                background-color: #e1ecff;
-                color: #3a84ff;
-            }
+            }}
+            QListWidget::item:selected {{
+                background-color: {list_selected_bg};
+                color: {list_selected_text};
+            }}
         """)
     
     def load_business_names(self):
