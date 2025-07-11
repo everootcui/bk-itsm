@@ -566,7 +566,6 @@ class MainWindow(QMainWindow):
         self.table.setRowCount(len(records_to_show))
         for i, record in enumerate(reversed(records_to_show)):
             self.table.setItem(i, 0, QTableWidgetItem(record["business"]))
-            # 格式化提单时间为yyyyMMdd
             date_str = record.get("submit_date", "")
             date_fmt = date_str.replace("-", "") if date_str else ""
             self.table.setItem(i, 1, QTableWidgetItem(date_fmt))
@@ -590,8 +589,8 @@ class MainWindow(QMainWindow):
                     background-color: #a12121;
                 }
             """)
-            row_in_records = len(records_to_show) - 1 - i
-            delete_btn.clicked.connect(lambda checked, row=row_in_records: self.delete_record(row))
+            # 直接传递当前表格行号i
+            delete_btn.clicked.connect(lambda checked, row=i: self.delete_record(row))
             self.table.setCellWidget(i, 4, delete_btn)
         self.table.resizeRowsToContents()
 
@@ -635,23 +634,17 @@ class MainWindow(QMainWindow):
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
-
         if reply == QMessageBox.Yes:
-            # 由于表格是倒序显示的，需要找到原始records列表中对应的索引
-            original_index = len(self.records) - 1 - row
-            if 0 <= original_index < len(self.records):
-                 deleted_business = self.records[original_index]['business']
-                 self.records.pop(original_index)
-                 self.save_data()
-                 self.update_table()
-                 self.update_stats()
-                # 检查删除的业务是否还在记录中使用，如果没有则从业务名称库中移除（可选）
-                # if deleted_business in self.business_names and not any(r['business'] == deleted_business for r in self.records):
-                #     self.business_names.remove(deleted_business)
-                #     self.save_business_names()
-                #     self.update_business_combo()
+            records_to_show = getattr(self, 'filtered_records', None) or self.records
+            # 表格是倒序显示的，所以要反向取
+            record = list(reversed(records_to_show))[row]
+            if record in self.records:
+                self.records.remove(record)
+                self.save_data()
+                self.update_table()
+                self.update_stats()
             else:
-                 QMessageBox.warning(self, "错误", "删除记录失败，索引超出范围。")
+                QMessageBox.warning(self, "错误", "删除记录失败，未找到对应数据。")
 
     def generate_record_text(self):
         # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 20250712 完成了xxx 0.5
