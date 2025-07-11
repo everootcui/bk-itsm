@@ -7,9 +7,9 @@ from PySide6.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QTableWidget,
     QTableWidgetItem, QMessageBox, QCompleter,
     QComboBox, QGridLayout, QSizePolicy, QSpacerItem,
-    QHeaderView, QApplication
+    QHeaderView, QApplication, QDateEdit
 )
-from PySide6.QtCore import Qt, QStringListModel, QSize, QCoreApplication
+from PySide6.QtCore import Qt, QStringListModel, QSize, QCoreApplication, QDate
 from PySide6.QtGui import QColor, QFont, QIcon
 from .business_dialog import BusinessDialog
 
@@ -119,13 +119,12 @@ class MainWindow(QMainWindow):
         # 添加新记录标签
         new_record_label = QLabel("添加新记录")
         new_record_label.setObjectName("sectionLabel")
-        input_layout.addWidget(new_record_label, 0, 0, 1, 4)
+        input_layout.addWidget(new_record_label, 0, 0, 1, 5)
 
-        # 设置标签样式
         label_font = QFont()
         label_font.setPointSize(10)
 
-        # 业务名称下拉框和添加记录按钮在同一行
+        # 业务名称
         business_label = QLabel("业务名称:")
         business_label.setFont(label_font)
         self.business_combo = QComboBox()
@@ -141,8 +140,20 @@ class MainWindow(QMainWindow):
 
         input_layout.addWidget(business_label, 1, 0, alignment=Qt.AlignRight | Qt.AlignVCenter)
         input_layout.addWidget(self.business_combo, 1, 1)
-        input_layout.addWidget(self.add_button, 1, 2)
-        input_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 3)
+        input_layout.addWidget(self.add_button, 1, 4)
+        input_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 5)
+
+        # 提单时间
+        date_label = QLabel("提单时间:")
+        date_label.setFont(label_font)
+        self.date_edit = QDateEdit()
+        self.date_edit.setCalendarPopup(True)
+        self.date_edit.setDisplayFormat("yyyy-MM-dd")
+        self.date_edit.setDate(QDate.currentDate())
+        self.date_edit.setMinimumHeight(28)
+        self.date_edit.setMaximumWidth(120)
+        input_layout.addWidget(date_label, 1, 2, alignment=Qt.AlignRight | Qt.AlignVCenter)
+        input_layout.addWidget(self.date_edit, 1, 3)
 
         # 任务描述和耗时输入在同一行，并与上一行对齐
         task_label = QLabel("任务描述:")
@@ -158,48 +169,33 @@ class MainWindow(QMainWindow):
         self.manual_time_input.setMinimumHeight(28)
         self.manual_time_input.setMaximumWidth(80)
 
-        # 创建增加和减少耗时的按钮
         self.increase_time_button = QPushButton("+")
-        self.increase_time_button.setFixedSize(28, 28) # 设置固定大小
-        self.increase_time_button.setObjectName("timeControlButton") # 设置对象名称
+        self.increase_time_button.setFixedSize(28, 28)
+        self.increase_time_button.setObjectName("timeControlButton")
         self.decrease_time_button = QPushButton("-")
-        self.decrease_time_button.setFixedSize(28, 28) # 设置固定大小
-        self.decrease_time_button.setObjectName("timeControlButton") # 设置对象名称
-
+        self.decrease_time_button.setFixedSize(28, 28)
+        self.decrease_time_button.setObjectName("timeControlButton")
         self.increase_time_button.clicked.connect(self.increase_time)
         self.decrease_time_button.clicked.connect(self.decrease_time)
 
-        # 将任务描述和耗时相关的标签、输入框和按钮添加到GridLayout (放在第2行)
-        # 任务描述标签和输入框
-        input_layout.addWidget(task_label, 2, 0, alignment=Qt.AlignRight | Qt.AlignVCenter) # 任务描述标签在第0列
-        input_layout.addWidget(self.task_input, 2, 1, 1, 1) # 任务描述输入框在第1列
-
-        # 耗时标签、输入框和按钮
-        input_layout.addWidget(manual_time_label, 2, 2, alignment=Qt.AlignRight | Qt.AlignVCenter) # 耗时标签在第2列
-        # 使用QHBoxLayout来放置耗时输入框和增加/减少按钮
+        input_layout.addWidget(task_label, 2, 0, alignment=Qt.AlignRight | Qt.AlignVCenter)
+        input_layout.addWidget(self.task_input, 2, 1, 1, 1)
+        input_layout.addWidget(manual_time_label, 2, 2, alignment=Qt.AlignRight | Qt.AlignVCenter)
         time_input_buttons_layout = QHBoxLayout()
-        time_input_buttons_layout.setContentsMargins(0, 0, 0, 0) # 移除内边距
-        time_input_buttons_layout.setSpacing(5) # 调整耗时输入框和按钮之间的间隔
+        time_input_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        time_input_buttons_layout.setSpacing(5)
         time_input_buttons_layout.addWidget(self.manual_time_input)
-        time_input_buttons_layout.addWidget(self.increase_time_button) # +按钮在前
-        time_input_buttons_layout.addWidget(self.decrease_time_button) # -按钮在后
+        time_input_buttons_layout.addWidget(self.increase_time_button)
+        time_input_buttons_layout.addWidget(self.decrease_time_button)
+        input_layout.addLayout(time_input_buttons_layout, 2, 3, 1, 3)
 
-        input_layout.addLayout(time_input_buttons_layout, 2, 3, 1, 3) # 将耗时输入框和按钮的布局添加到网格布局的第2行第3列，跨越3列
-
-        # 设置列的伸展因子以实现比例和调整间距
-        # 任务描述输入框所在的列 (列1) 伸展因子设置为2
-        input_layout.setColumnStretch(1, 2) 
-
-        # 耗时输入框和按钮所在的列组 (列3到列5) 占比1
-        # 主要通过控制列3的伸展因子来影响耗时输入框的宽度
+        input_layout.setColumnStretch(1, 2)
         input_layout.setColumnStretch(3, 1)
-        input_layout.setColumnStretch(4, 0) # 按钮列不伸展
-        input_layout.setColumnStretch(5, 0) # 按钮列不伸展
-
-        # 其他列 (标签) 的伸展因子为0，由内容决定宽度
+        input_layout.setColumnStretch(4, 0)
+        input_layout.setColumnStretch(5, 0)
         input_layout.setColumnStretch(0, 0)
         input_layout.setColumnStretch(2, 0)
-        input_layout.setColumnStretch(6, 0) # 确保超出使用的列伸展因子为0
+        input_layout.setColumnStretch(6, 0)
 
         self.layout.addWidget(input_container)
 
@@ -210,26 +206,22 @@ class MainWindow(QMainWindow):
 
 
     def create_table(self):
-        # 移除"时间"列，总共 4 列
+        # 5列：业务、提单时间、任务、耗时、操作
         self.table = QTableWidget()
-        self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(["业务", "任务", "耗时", "操作"])
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(["业务", "提单时间", "任务", "耗时", "操作"])
 
-        # 设置表格列宽
         header = self.table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)  # 业务名称
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # 任务描述
-        header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)  # 耗时
-        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)  # 操作
-        header.resizeSection(3, 70) # 设置操作列固定宽度
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)  # 提单时间
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)  # 任务描述
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)  # 耗时
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)  # 操作
+        header.resizeSection(4, 70)
+        header.setMinimumSectionSize(80)
 
-        # 设置列的最小宽度以优化编辑时的显示
-        header.setMinimumSectionSize(80) # 设置所有列的统一最小宽度
-
-        # 设置表格样式
         self.table.setAlternatingRowColors(False)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        # 允许双击或按 F2 键编辑单元格
         self.table.setEditTriggers(QTableWidget.DoubleClicked | QTableWidget.EditKeyPressed)
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(False)
@@ -263,12 +255,9 @@ class MainWindow(QMainWindow):
                 border-color: #2b6cd9;
             }
             QComboBox::drop-down {
-                /* border: none; */ /* 移除默认边框 */
                 width: 20px;
             }
             QComboBox::down-arrow {
-                /* image: none; */ /* 移除默认图像 */
-                /* border: none; */ /* 移除默认边框 */
             }
             QHeaderView::section {
                 background-color: #f5f6fa;
@@ -283,10 +272,7 @@ class MainWindow(QMainWindow):
                 font-size: 11px;
             }
         """)
-
-        # 连接 itemChanged 信号到处理函数
         self.table.itemChanged.connect(self.on_table_item_changed)
-
         self.layout.addWidget(self.table)
 
     def create_stats_area(self):
@@ -543,8 +529,9 @@ class MainWindow(QMainWindow):
         business = self.business_combo.currentText().strip()
         task = self.task_input.text().strip()
         manual_time = self.manual_time_input.text().strip()
+        submit_date = self.date_edit.date().toString("yyyy-MM-dd")
 
-        if not all([business, task, manual_time]):
+        if not all([business, task, manual_time, submit_date]):
             QMessageBox.warning(self, "警告", "请填写所有字段")
             return
 
@@ -558,12 +545,12 @@ class MainWindow(QMainWindow):
             "business": business,
             "task": task,
             "manual_time": manual_time,
+            "submit_date": submit_date,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
 
         self.records.append(record)
 
-        # 如果是新的业务名称，添加到业务名称库并保存
         if business and business not in self.business_names:
             self.business_names.append(business)
             self.save_business_names()
@@ -575,15 +562,18 @@ class MainWindow(QMainWindow):
         self.clear_inputs()
 
     def update_table(self):
-        self.table.setRowCount(len(self.records))
-        for i, record in enumerate(reversed(self.records)):
+        records_to_show = getattr(self, 'filtered_records', None) or self.records
+        self.table.setRowCount(len(records_to_show))
+        for i, record in enumerate(reversed(records_to_show)):
             self.table.setItem(i, 0, QTableWidgetItem(record["business"]))
-            self.table.setItem(i, 1, QTableWidgetItem(record["task"]))
-            self.table.setItem(i, 2, QTableWidgetItem(str(record["manual_time"])))
-            # 移除了设置"时间"列的代码
-
+            # 格式化提单时间为yyyyMMdd
+            date_str = record.get("submit_date", "")
+            date_fmt = date_str.replace("-", "") if date_str else ""
+            self.table.setItem(i, 1, QTableWidgetItem(date_fmt))
+            self.table.setItem(i, 2, QTableWidgetItem(record["task"]))
+            self.table.setItem(i, 3, QTableWidgetItem(str(record["manual_time"])))
             delete_btn = QPushButton("删除")
-            delete_btn.setFixedSize(60, 24) # 调整删除按钮大小
+            delete_btn.setFixedSize(60, 24)
             delete_btn.setStyleSheet("""
                 QPushButton {
                     background-color: #ea3636;
@@ -600,10 +590,9 @@ class MainWindow(QMainWindow):
                     background-color: #a12121;
                 }
             """)
-            delete_btn.clicked.connect(lambda checked, row=i: self.delete_record(row))
-            # 将操作按钮设置到新的列索引 3
-            self.table.setCellWidget(i, 3, delete_btn)
-
+            row_in_records = len(records_to_show) - 1 - i
+            delete_btn.clicked.connect(lambda checked, row=row_in_records: self.delete_record(row))
+            self.table.setCellWidget(i, 4, delete_btn)
         self.table.resizeRowsToContents()
 
 
@@ -617,11 +606,10 @@ class MainWindow(QMainWindow):
         self.records_today.setText(f"总记录单量: {total_records_count}条")
 
     def clear_inputs(self):
-        # 清除输入框内容，但不清空下拉框的当前文本，以便于重复输入同一业务的记录
-        # self.business_combo.setCurrentText("")
         self.task_input.clear()
         self.manual_time_input.clear()
         self.business_combo.setFocus()
+        # 不再自动重置日期选择器
 
     # 添加增加耗时的方法
     def increase_time(self):
@@ -666,18 +654,18 @@ class MainWindow(QMainWindow):
                  QMessageBox.warning(self, "错误", "删除记录失败，索引超出范围。")
 
     def generate_record_text(self):
-        # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 完成了xxx 0.5
+        # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 20250712 完成了xxx 0.5
         if not self.records:
             QMessageBox.information(self, "提示", "没有记录可以生成文本")
             return
 
         text = "小鲸 批量创建记录单\n"
-        # 注意：截图中的文本顺序与表格倒序不同，这里按照截图中的逻辑（最新记录在前面）生成文本
-        # 如果需要按照时间正序生成，可以移除 reversed()
-        for record in reversed(self.records):
-            text += f"{record['business']} {record['task']} {record['manual_time']:.1f}\n"
+        # 按截图逻辑（最新记录在前面）生成文本
+        records_to_show = getattr(self, 'filtered_records', None) or self.records
+        for record in reversed(records_to_show):
+            date_fmt = record.get("submit_date", "").replace("-", "") if record.get("submit_date") else ""
+            text += f"{record['business']} {date_fmt} {record['task']} {record['manual_time']:.1f}\n"
 
-        # 将生成的文本复制到剪贴板
         clipboard = QApplication.clipboard()
         clipboard.setText(text.strip())
         QMessageBox.information(self, "提示", "记录文本已复制到剪贴板")
@@ -706,14 +694,15 @@ class MainWindow(QMainWindow):
             if os.path.exists(os.path.join(self.data_dir, "records.json")):
                 with open(os.path.join(self.data_dir, "records.json"), "r", encoding="utf-8") as f:
                     self.records = json.load(f)
-
+                # 兼容老数据：无submit_date时补充为当前日期
+                for r in self.records:
+                    if "submit_date" not in r:
+                        r["submit_date"] = datetime.now().strftime("%Y-%m-%d")
             if os.path.exists(os.path.join(self.data_dir, "business.json")):
                 with open(os.path.join(self.data_dir, "business.json"), "r", encoding="utf-8") as f:
                     self.business_names = json.load(f)
         except Exception as e:
             QMessageBox.warning(self, "警告", f"加载数据失败: {str(e)}")
-
-        # 在加载数据后更新业务名称下拉框的内容
         self.update_business_combo()
 
     def save_data(self):
@@ -753,59 +742,45 @@ class MainWindow(QMainWindow):
     def on_table_item_changed(self, item):
         if item is None:
             return
-
         row = item.row()
         col = item.column()
         new_value = item.text().strip()
-
-        # 根据列索引确定编辑的是哪个字段
+        # 只允许编辑业务、提单时间、任务、耗时
         field = None
         if col == 0:
             field = "business"
         elif col == 1:
-            field = "task"
+            field = "submit_date"
         elif col == 2:
+            field = "task"
+        elif col == 3:
             field = "manual_time"
         else:
-            return # 忽略其他列的编辑
-
-        # 对于耗时字段，验证输入是否为有效的数字
-        if field in ["manual_time"]:
+            return
+        if field == "manual_time":
             try:
                 new_value = float(new_value)
             except ValueError:
                 QMessageBox.warning(self, "警告", "耗时必须是数字")
-                # 恢复原来的值
                 self.update_table()
                 return
-
-        # 找到原始 records 列表中对应的记录 (考虑表格倒序显示)
-        original_index = len(self.records) - 1 - row
-        if 0 <= original_index < len(self.records):
-            record = self.records[original_index]
-            old_value = record[field]
-
-            # 更新记录中对应字段的值
-            record[field] = new_value
-
-            # 如果是业务名称被修改，检查新名称是否在业务名称库中
+        # 找到原始 records 列表中对应的记录 (考虑倒序显示)
+        records_to_show = getattr(self, 'filtered_records', None) or self.records
+        original_index = len(records_to_show) - 1 - row
+        if 0 <= original_index < len(records_to_show):
+            # 找到原始数据在 self.records 中的索引
+            record = records_to_show[original_index]
+            # 需要同步修改 self.records
+            idx_in_all = self.records.index(record)
+            self.records[idx_in_all][field] = new_value
             if field == "business" and new_value not in self.business_names:
                 self.business_names.append(new_value)
                 self.save_business_names()
                 self.update_business_combo()
-
-            # 保存更新后的数据
             self.save_data()
-
-            # 更新统计信息
             self.update_stats()
-
-            # 可选：显示修改成功的提示
-            # QMessageBox.information(self, "提示", f"已更新 {field} 为 {new_value}")
-
         else:
             QMessageBox.warning(self, "错误", "更新记录失败，索引超出范围。")
-            # 恢复原来的值
             self.update_table()
 
     # 添加业务排序方法
