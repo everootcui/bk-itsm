@@ -15,11 +15,11 @@ from .business_dialog import BusinessDialog
 
 def get_app_data_dir():
     """获取应用程序数据目录"""
-    if sys.platform == 'darwin':  # macOS
+    if sys.platform == 'darwin':  # macOS 使用用户家目录下的隐藏目录
         home = os.path.expanduser('~')
-        return os.path.join(home, 'Library', 'Application Support', 'WorkRecordTool')
-    else:  # Windows 和其他平台
-        return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+        return os.path.join(home, '.bkitsm', 'data')
+    # 其他平台使用当前目录下 data
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -49,6 +49,8 @@ class MainWindow(QMainWindow):
         self.records = []
         self.business_names = []
         self.data_dir = get_app_data_dir()
+        # 确保数据目录与核心配置文件存在
+        self.ensure_data_environment()
 
         # 创建主窗口部件
         self.central_widget = QWidget()
@@ -568,6 +570,8 @@ class MainWindow(QMainWindow):
 
     def update_table(self):
         records_to_show = getattr(self, 'filtered_records', None) or self.records
+        # 在程序化更新表格时屏蔽 itemChanged 信号，避免触发校验导致弹窗循环
+        self.table.blockSignals(True)
         self.table.setRowCount(len(records_to_show))
         for i, record in enumerate(reversed(records_to_show)):
             self.table.setItem(i, 0, QTableWidgetItem(record["business"]))
@@ -598,6 +602,7 @@ class MainWindow(QMainWindow):
             delete_btn.clicked.connect(lambda checked, row=i: self.delete_record(row))
             self.table.setCellWidget(i, 4, delete_btn)
         self.table.resizeRowsToContents()
+        self.table.blockSignals(False)
 
 
     def update_stats(self):
@@ -659,9 +664,120 @@ class MainWindow(QMainWindow):
             if os.path.exists(public_file):
                 with open(public_file, "r", encoding="utf-8") as f:
                     public_businesses = [line.strip() for line in f.readlines() if line.strip()]
+            else:
+                # 如果文件不存在，创建默认的public.ini文件
+                self.create_default_public_ini()
+                # 重新读取刚创建的文件
+                with open(public_file, "r", encoding="utf-8") as f:
+                    public_businesses = [line.strip() for line in f.readlines() if line.strip()]
         except Exception as e:
             print(f"加载公共业务文件失败: {str(e)}")
         return public_businesses
+
+    def create_default_public_ini(self):
+        """创建默认的public.ini文件"""
+        try:
+            # 确保data目录存在
+            os.makedirs(self.data_dir, exist_ok=True)
+            
+            public_file = os.path.join(self.data_dir, "public.ini")
+            default_content = """BKChat
+全面运维质量评估
+HomePage
+货币化
+PowerAPP
+CDN防盗刷
+TGSRE门户
+发海魔北的质量管理
+蓝鲸社区
+员工培训
+招聘
+SreData
+海外测速
+业务交接专项
+项目管理
+子公司效率提升
+ASKR
+故障应急体系
+实时充值流水对账
+海外Gcloud平台组件风险消除
+用户管理
+权限中心
+配置平台
+作业平台
+PaaS3.0
+APIGateway
+标准运维
+流程服务
+节点管理
+监控平台
+日志平台
+容器管理平台
+蓝盾
+DBM
+审计中心
+BSCP
+图表平台
+BKBase
+海垒
+BKFlow
+业务受理
+BKSec
+BKSAM
+WeTerm
+CodeCC
+自动化建设
+安全产品
+运营产品
+通用测试
+二方技术服务
+能力发展​
+学习探索
+混沌工程
+ITSM规范化项目
+TGPA
+部门年会筹备
+724运维大会筹备
+中心年会筹备
+微享项目
+SRE商店
+研发流程数字化
+云研发P4
+Avatar测试环境管理
+岗位智能体
+运维操作看板
+云研发软件安装
+云研发自动化助手
+SRE研发服务
+团队例会"""
+            
+            with open(public_file, "w", encoding="utf-8") as f:
+                f.write(default_content)
+            print(f"已创建默认的public.ini文件: {public_file}")
+        except Exception as e:
+            print(f"创建默认public.ini文件失败: {str(e)}")
+
+    def ensure_data_environment(self):
+        """确保数据目录及必要的配置文件存在"""
+        try:
+            os.makedirs(self.data_dir, exist_ok=True)
+            # public.ini
+            public_file = os.path.join(self.data_dir, "public.ini")
+            if not os.path.exists(public_file):
+                self.create_default_public_ini()
+            # records.json
+            records_file = os.path.join(self.data_dir, "records.json")
+            if not os.path.exists(records_file):
+                with open(records_file, "w", encoding="utf-8") as f:
+                    json.dump([], f, ensure_ascii=False, indent=2)
+            # business.json
+            business_file = os.path.join(self.data_dir, "business.json")
+            if not os.path.exists(business_file):
+                with open(business_file, "w", encoding="utf-8") as f:
+                    json.dump([], f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            # 仅打印日志，避免启动中断
+            print(f"初始化数据目录失败: {str(e)}")
 
     def generate_record_text(self):
         # 根据需求生成文本格式，分为公共记录单和批量创建记录单
@@ -781,6 +897,9 @@ class MainWindow(QMainWindow):
     def on_table_item_changed(self, item):
         if item is None:
             return
+        # 若当前处于程序化更新阶段（屏蔽信号中），直接忽略
+        if self.table.signalsBlocked():
+            return
         row = item.row()
         col = item.column()
         new_value = item.text().strip()
@@ -806,8 +925,14 @@ class MainWindow(QMainWindow):
         elif field == "task":
             # 验证任务描述长度
             if len(new_value) < 10:
+                # 将单元格还原为原值，但不触发二次校验
+                records_to_show = getattr(self, 'filtered_records', None) or self.records
+                original_index = len(records_to_show) - 1 - row
+                original_value = records_to_show[original_index].get("task", "") if 0 <= original_index < len(records_to_show) else ""
+                self.table.blockSignals(True)
+                self.table.setItem(row, 2, QTableWidgetItem(original_value))
+                self.table.blockSignals(False)
                 QMessageBox.warning(self, "警告", "任务描述至少需要10个字符")
-                self.update_table()
                 return
         # 找到原始 records 列表中对应的记录 (考虑倒序显示)
         records_to_show = getattr(self, 'filtered_records', None) or self.records

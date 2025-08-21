@@ -9,11 +9,11 @@ from PySide6.QtCore import Qt
 
 def get_app_data_dir():
     """获取应用程序数据目录"""
-    if sys.platform == 'darwin':  # macOS
+    if sys.platform == 'darwin':  # macOS 使用 ~/.bkitsm/data
         home = os.path.expanduser('~')
-        return os.path.join(home, 'Library', 'Application Support', 'WorkRecordTool')
-    else:  # Windows 和其他平台
-        return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+        return os.path.join(home, '.bkitsm', 'data')
+    # 其他平台使用当前目录下 data
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
 
 class BusinessDialog(QDialog):
     def __init__(self, parent=None):

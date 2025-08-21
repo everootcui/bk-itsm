@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('favicon.ico', '.'), ('data/public.ini', 'data')],
+    datas=[('favicon.ico', '.'), ('data/public.ini', 'data'), ('data/records.json', 'data'), ('data/business.json', 'data')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
