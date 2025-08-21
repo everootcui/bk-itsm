@@ -47,7 +47,7 @@ ui/                 # UI 相关文件目录
 在命令提示符或 PowerShell 中，切换到项目根目录，执行以下命令进行编译：
 
 ```bash
-pyinstaller --noconsole --onedir --upx-dir=upx --icon=favicon.ico --add-data "favicon.ico;." --add-data "data/public.ini;data" .\main.py
+pyinstaller --noconsole --onedir --upx-dir=upx --icon=favicon.ico --add-data "favicon.ico;." .\main.py
 ```
 
 
