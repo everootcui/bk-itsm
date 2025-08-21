@@ -535,6 +535,11 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "警告", "请填写所有字段")
             return
 
+        # 验证任务描述长度
+        if len(task) < 10:
+            QMessageBox.warning(self, "警告", "任务描述至少需要10个字符")
+            return
+
         try:
             manual_time = float(manual_time)
         except ValueError:
@@ -646,18 +651,59 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.warning(self, "错误", "删除记录失败，未找到对应数据。")
 
+    def load_public_businesses(self):
+        """加载公共业务名称列表"""
+        public_businesses = []
+        try:
+            public_file = os.path.join(self.data_dir, "public.ini")
+            if os.path.exists(public_file):
+                with open(public_file, "r", encoding="utf-8") as f:
+                    public_businesses = [line.strip() for line in f.readlines() if line.strip()]
+        except Exception as e:
+            print(f"加载公共业务文件失败: {str(e)}")
+        return public_businesses
+
     def generate_record_text(self):
-        # 根据需求生成文本格式：小鲸 批量创建记录单\nxxx业务 20250712 完成了xxx 0.5
+        # 根据需求生成文本格式，分为公共记录单和批量创建记录单
         if not self.records:
             QMessageBox.information(self, "提示", "没有记录可以生成文本")
             return
 
-        text = "小鲸 批量创建记录单\n"
-        # 按截图逻辑（最新记录在前面）生成文本
+        # 加载公共业务名称
+        public_businesses = self.load_public_businesses()
+        
+        # 分类记录
+        public_records = []
+        normal_records = []
+        
         records_to_show = getattr(self, 'filtered_records', None) or self.records
         for record in reversed(records_to_show):
-            date_fmt = record.get("submit_date", "").replace("-", "") if record.get("submit_date") else ""
-            text += f"{record['business']} {date_fmt} {record['task']} {record['manual_time']:.1f}\n"
+            business_name = record.get("business", "")
+            # 检查是否为公共业务
+            is_public = any(public_business in business_name for public_business in public_businesses)
+            
+            if is_public:
+                public_records.append(record)
+            else:
+                normal_records.append(record)
+
+        # 生成文本
+        text = ""
+        
+        # 批量创建记录单
+        if normal_records:
+            text += "小鲸 批量创建记录单\n"
+            for record in normal_records:
+                date_fmt = record.get("submit_date", "").replace("-", "") if record.get("submit_date") else ""
+                text += f"{record['business']} {date_fmt} {record['task']} {record['manual_time']:.1f}\n"
+            text += "\n"
+        
+        # 公共记录单
+        if public_records:
+            text += "小鲸 公共记录单\n"
+            for record in public_records:
+                date_fmt = record.get("submit_date", "").replace("-", "") if record.get("submit_date") else ""
+                text += f"{record['business']} {date_fmt} {record['task']} {record['manual_time']:.1f}\n"
 
         clipboard = QApplication.clipboard()
         clipboard.setText(text.strip())
@@ -755,6 +801,12 @@ class MainWindow(QMainWindow):
                 new_value = float(new_value)
             except ValueError:
                 QMessageBox.warning(self, "警告", "耗时必须是数字")
+                self.update_table()
+                return
+        elif field == "task":
+            # 验证任务描述长度
+            if len(new_value) < 10:
+                QMessageBox.warning(self, "警告", "任务描述至少需要10个字符")
                 self.update_table()
                 return
         # 找到原始 records 列表中对应的记录 (考虑倒序显示)
